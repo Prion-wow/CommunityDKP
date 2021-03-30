@@ -106,7 +106,7 @@ local function UpdateBidderWindow()
 	if mode == "Minimum Bid Values" or (mode == "Zero Sum" and core.DB.modes.ZeroSumBidType == "Minimum Bid") then
 		core.BidInterface.MinBidHeader:SetText(L["MINIMUMBID"]..":")
 		core.BidInterface.SubmitBid:SetPoint("LEFT", core.BidInterface.Bid, "RIGHT", 8, 0)
-		core.BidInterface.SubmitBid:SetText(L["SUBMITBID"])
+		core.BidInterface.SubmitBid:SetText("MAINSPEC BID")
 		core.BidInterface.Bid:Show();
 		core.BidInterface.CancelBid:Show();
 		core.BidInterface.Pass:Show();
@@ -428,6 +428,18 @@ function CommDKP:CurrItem_Set(item, value, icon, value2)
       CommDKP.Sync:SendData("CommDKPBidder", tostring(message))
       core.BidInterface.Bid:ClearFocus();
     end)
+	
+	core.BidInterface.SubmitOSBid:SetScript("OnClick", function()
+      local message;
+
+      if core.BidInterface.Bid:IsShown() then
+        message = "!bidos "..CommDKP_round(core.BidInterface.Bid:GetNumber(), core.DB.modes.rounding)
+      else
+        message = "!bidos";
+      end
+      CommDKP.Sync:SendData("CommDKPBidder", tostring(message))
+      core.BidInterface.Bid:ClearFocus();
+    end)
 
     core.BidInterface.CancelBid:SetScript("OnClick", function()
       CommDKP.Sync:SendData("CommDKPBidder", "!bid cancel")
@@ -731,10 +743,19 @@ function CommDKP:BidInterface_Create()
     f.SubmitBid = CreateFrame("Button", nil, f, "CommunityDKPButtonTemplate")
   f.SubmitBid:SetPoint("LEFT", f.Bid, "RIGHT", 8, 0);
   f.SubmitBid:SetSize(90,25)
-  f.SubmitBid:SetText(L["SUBMITBID"]);
+  f.SubmitBid:SetText("MAINSPEC BID");
   f.SubmitBid:GetFontString():SetTextColor(1, 1, 1, 1)
   f.SubmitBid:SetNormalFontObject("CommDKPSmallCenter");
   f.SubmitBid:SetHighlightFontObject("CommDKPSmallCenter");
+  
+  f.SubmitOSBid = CreateFrame("Button", nil, f, "CommunityDKPButtonTemplate")
+  f.SubmitOSBid:SetPoint("LEFT", f.Bid, "RIGHT", 8, -30);
+  f.SubmitOSBid:SetSize(90,25)
+  f.SubmitOSBid:SetText("OFFSPEC BID");
+  f.SubmitOSBid:GetFontString():SetTextColor(1, 1, 1, 1)
+  f.SubmitOSBid:SetNormalFontObject("CommDKPSmallCenter");
+  f.SubmitOSBid:SetHighlightFontObject("CommDKPSmallCenter");
+  
 
   f.CancelBid = CreateFrame("Button", nil, f, "CommunityDKPButtonTemplate")
   f.CancelBid:SetPoint("LEFT", f.SubmitBid, "RIGHT", 8, 0);
@@ -749,7 +770,7 @@ function CommDKP:BidInterface_Create()
   end)
 
   f.Pass = CreateFrame("Button", nil, f, "CommunityDKPButtonTemplate")
-  f.Pass:SetPoint("TOPLEFT", f.SubmitBid, "BOTTOM", 5, -5);
+  f.Pass:SetPoint("TOPLEFT", f.SubmitBid, "BOTTOM", 52, -5);
   f.Pass:SetSize(90,25)
   f.Pass:SetText(L["PASS"]);
   f.Pass:GetFontString():SetTextColor(1, 1, 1, 1)

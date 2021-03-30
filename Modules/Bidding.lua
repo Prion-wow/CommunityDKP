@@ -136,71 +136,96 @@ function CommDKP_CHAT_MSG_WHISPER(text, ...)
   if string.find(name, "-") then          -- finds and removes server name from name if exists
     local dashPos = string.find(name, "-")
     name = strsub(name, 1, dashPos-1)
+	
   end
 
   if string.find(text, "!bid") == 1 and core.IsOfficer == true then
     if core.BidInProgress then
       cmd = BidCmd(text)
+	  
       if (mode == "Static Item Values" and cmd ~= "cancel") or (mode == "Zero Sum" and cmd ~= "cancel" and core.DB.modes.ZeroSumBidType == "Static") then
         cmd = nil;
+		
       end
       if cmd == "cancel" and core.DB.modes.mode ~= "Roll Based Bidding" then
+	  
         local flagCanceled = false
         for i=1, #Bids_Submitted do           -- !bid cancel will cancel their bid
           if Bids_Submitted[i] and Bids_Submitted[i].player == name then
             table.remove(Bids_Submitted, i)
+			
             if core.DB.modes.BroadcastBids then
               CommDKP.Sync:SendData("CommDKPBidShare", Bids_Submitted)
+			 
             end
             CommDKP:BidScrollFrame_Update()
             response = L["BIDCANCELLED"]
             flagCanceled = true
             --SendChatMessage(response, "WHISPER", nil, name)
             --return;
+		
           end
         end
         if not flagCanceled then
           response = L["NOTSUBMITTEDBID"]
+		  
         end
       elseif cmd == "cancel" and core.DB.modes.mode == "Roll Based Bidding" then
         response = L["CANTCANCELROLL"]
+	
       end
       dkp = tonumber(CommDKP:GetPlayerDKP(name))
       if not dkp then    -- exits function if player is not on the DKP list
         SendChatMessage(L["INVALIDPLAYER"], "WHISPER", nil, name)
+		
         return
       end
 
       if (tonumber(cmd) and (core.BiddingWindow.maxBid == nil or tonumber(cmd) <= core.BiddingWindow.maxBid:GetNumber() or core.BiddingWindow.maxBid:GetNumber() == 0)) or ((mode == "Static Item Values" or (mode == "Zero Sum" and core.DB.modes.ZeroSumBidType == "Static")) and not cmd) then
         if dkp then
+			
           if (cmd and cmd <= dkp) or (core.DB.modes.SubZeroBidding == true and dkp >= 0) or (core.DB.modes.SubZeroBidding == true and core.DB.modes.AllowNegativeBidders == true) or (mode == "Static Item Values" and dkp > 0 and (dkp > core.BiddingWindow.cost:GetNumber() or core.DB.modes.SubZeroBidding == true or core.DB.modes.costvalue == "Percent")) or ((mode == "Zero Sum" and core.DB.modes.ZeroSumBidType == "Static") and not cmd) then
+		 
             if (cmd and core.BiddingWindow.minBid and tonumber(core.BiddingWindow.minBid:GetNumber()) <= cmd) or mode == "Static Item Values" or (mode == "Zero Sum" and core.DB.modes.ZeroSumBidType == "Static") or (mode == "Zero Sum" and core.DB.modes.ZeroSumBidType == "Minimum Bid" and cmd >= core.BiddingWindow.minBid:GetNumber()) then
+			
               for i=1, #Bids_Submitted do           -- checks if a bid was submitted, removes last bid if it was
                 if (not (mode == "Zero Sum" and core.DB.modes.ZeroSumBidType == "Static")) and Bids_Submitted[i] and Bids_Submitted[i].player == name and Bids_Submitted[i].bid < cmd then
+				
                   table.remove(Bids_Submitted, i)
                 elseif (not (mode == "Zero Sum" and core.DB.modes.ZeroSumBidType == "Static")) and Bids_Submitted[i] and Bids_Submitted[i].player == name and Bids_Submitted[i].bid >= cmd then
                   SendChatMessage(L["BIDEQUALORLESS"], "WHISPER", nil, name)
+				  
                   return
                 end
               end
               if mode == "Minimum Bid Values" or (mode == "Zero Sum" and core.DB.modes.ZeroSumBidType == "Minimum Bid") then
+			  
                 if core.DB.modes.AnnounceBid and ((Bids_Submitted[1] and Bids_Submitted[1].bid < cmd) or not Bids_Submitted[1]) then
+				
                   local msgTarget = "RAID";
                   if core.DB.modes.AnnounceRaidWarning then
+				
                     msgTarget = "RAID_WARNING";
                   end
 
                   if not core.DB.modes.AnnounceBidName then
                     SendChatMessage(L["NEWHIGHBID"].." "..cmd.." DKP", msgTarget)
+					
                   else
                     SendChatMessage(L["NEWHIGHBIDDER"].." "..name.." ("..cmd.." DKP)", msgTarget)
+					
                   end
                 end
                 if core.DB.modes.DeclineLowerBids and Bids_Submitted[1] and cmd <= Bids_Submitted[1].bid then   -- declines bids lower than highest bid
                   response = "Bid Declined! Current highest bid is "..Bids_Submitted[1].bid;
                 else
-                  table.insert(Bids_Submitted, {player=name, bid=cmd})
-                  response = L["YOURBIDOF"].." "..cmd.." "..L["DKPWASACCEPTED"].."."
+				  if string.find(text, "os") then					
+				     table.insert(Bids_Submitted, {player=name, bid=cmd, spec="OFFSPEC"})
+			         response = L["YOURBIDOF"].." "..cmd.." OFFSPEC "..L["DKPWASACCEPTED"].."."
+				  else
+                     table.insert(Bids_Submitted, {player=name, bid=cmd, spec="MAINSPEC"})					 
+                     response = L["YOURBIDOF"].." "..cmd.." "..L["DKPWASACCEPTED"].."."
+				  end
                 end
                 if core.DB.modes.BroadcastBids then
                   CommDKP.Sync:SendData("CommDKPBidShare", Bids_Submitted)
@@ -231,6 +256,7 @@ function CommDKP_CHAT_MSG_WHISPER(text, ...)
                   CommDKP.Sync:SendData("CommDKPBidShare", Bids_Submitted)
                 end
                 response = L["BIDWASACCEPTED"]
+				
 
                 if Timer ~= 0 and Timer > (core.BiddingWindow.bidTimer:GetText() - 10) and core.DB.modes.AntiSnipe > 0 then
                   seconds = core.BiddingWindow.bidTimer:GetText().."{"..core.DB.modes.AntiSnipe
@@ -252,6 +278,7 @@ function CommDKP_CHAT_MSG_WHISPER(text, ...)
       elseif cmd ~= "cancel" and (tonumber(cmd) and tonumber(cmd) > core.BiddingWindow.maxBid:GetNumber()) then
         response = L["BIDDENIEDEXCEEDMAX"].." "..core.BiddingWindow.maxBid:GetNumber().." "..L["DKP"].."."
       else
+	  
         if cmd ~= "cancel" then
           response = L["BIDDENIEDINVALID"]
         end
@@ -678,7 +705,8 @@ local function StartBidding()
       else
         SendChatMessage(L["TAKINGBIDSON"].." "..core.BiddingWindow.item:GetText().." ("..core.BiddingWindow.minBid:GetText().." "..L["DKPMINBID"]..")", "RAID_WARNING")
       end
-      SendChatMessage(L["TOBIDUSE"].." "..channelText.." "..L["TOSEND"].." !bid <"..L["VALUE"].."> (ex: !bid "..core.BiddingWindow.minBid:GetText().."). "..L["OR"].." !bid cancel "..L["TOWITHDRAWBID"], "RAID_WARNING")
+      --SendChatMessage(L["TOBIDUSE"].." "..channelText.." "..L["TOSEND"].." !bid <"..L["VALUE"].."> (ex: !bid "..core.BiddingWindow.minBid:GetText().."). "..L["OR"].." !bid cancel "..L["TOWITHDRAWBID"], "RAID_WARNING")
+	  SendChatMessage("To bid whisper me !bid or !bidos follow by your bid (ex !bidos 10). Whisper !bid cancel to cancel your bid", "RAID_WARNING")
     elseif mode == "Static Item Values" or (mode == "Zero Sum" and core.DB.modes.ZeroSumBidType == "Static") then
       SendChatMessage(L["TAKINGBIDSON"].." "..core.BiddingWindow.item:GetText().." ("..core.BiddingWindow.cost:GetText()..perc..")", "RAID_WARNING")
       SendChatMessage(L["TOBIDUSE"].." "..channelText.." "..L["TOSEND"].." !bid. "..L["OR"].." !bid cancel "..L["TOWITHDRAWBID"], "RAID_WARNING")
@@ -1102,7 +1130,13 @@ local function SortBidTable()             -- sorts the Loot History Table by dat
   mode = core.DB.modes.mode;
   table.sort(Bids_Submitted, function(a, b)
       if mode == "Minimum Bid Values" or (mode == "Zero Sum" and core.DB.modes.ZeroSumBidType == "Minimum Bid") then
-        return a["bid"] > b["bid"]
+	    if a["spec"] == "OFFSPEC" and b["spec"] == "MAINSPEC" then
+		  return false
+		elseif a["spec"] == "MAINSPEC" and b["spec"] == "OFFSPEC" then
+		  return true
+		 else
+		  return a["bid"] > b["bid"]
+         end	 
       elseif mode == "Static Item Values" or (mode == "Zero Sum" and core.DB.modes.ZeroSumBidType == "Static") then
         return a["dkp"] > b["dkp"]
       elseif mode == "Roll Based Bidding" then
@@ -1116,9 +1150,9 @@ function CommDKP:BidScrollFrame_Update()
   local numOptions = #Bids_Submitted;
   local index, row
     local offset = FauxScrollFrame_GetOffset(core.BiddingWindow.bidTable) or 0
-    local rank;
+    local rank
     local showRows = #Bids_Submitted
-
+   
     if #Bids_Submitted > numrows then
       showRows = numrows
     end
@@ -1131,9 +1165,13 @@ function CommDKP:BidScrollFrame_Update()
     for i=1, showRows do
         row = core.BiddingWindow.bidTable.Rows[i]
         index = offset + i
+		
+	
         local dkp_total = CommDKP:Table_Search(CommDKP:GetTable(CommDKP_DKPTable, true), Bids_Submitted[i].player)
+		 
         local c = CommDKP:GetCColors(CommDKP:GetTable(CommDKP_DKPTable, true)[dkp_total[1][1]].class)
-        rank = CommDKP:GetGuildRank(Bids_Submitted[i].player)
+		
+        rank = Bids_Submitted[i].spec
         if Bids_Submitted[index] then
             row:Show()
             row.index = index
@@ -1186,14 +1224,19 @@ function CommDKP:BidScrollFrame_Update()
         end
       elseif core.DB.modes.CostSelection == "Second Bidder or Min" then
         if Bids_Submitted[2] then
-          core.BiddingWindow.cost:SetText(Bids_Submitted[2].bid)
+		  if Bids_Submitted[1].spec ~= Bids_Submitted[2].spec then
+		    core.BiddingWindow.cost:SetText(core.BiddingWindow.minBid:GetText())
+		   else
+              core.BiddingWindow.cost:SetText(Bids_Submitted[2].bid + 1)
+		   end
         else
           core.BiddingWindow.cost:SetText(core.BiddingWindow.minBid:GetText())
         end
       end
   end
+  end
     --FauxScrollFrame_Update(core.BiddingWindow.bidTable, numOptions, numrows, height, nil, nil, nil, nil, nil, nil, true) -- alwaysShowScrollBar= true to stop frame from hiding
-end
+
 
 function CommDKP:CreateBidWindow()
   local f = CreateFrame("Frame", "CommDKP_BiddingWindow", UIParent, "ShadowOverlaySmallTemplate");
